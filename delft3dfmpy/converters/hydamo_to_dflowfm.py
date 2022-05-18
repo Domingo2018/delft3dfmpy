@@ -240,30 +240,32 @@ def generate_bridges(bridges, yz_profiles=None, parametrised_profiles=None):
         DataFrame with weir attributes suitable for dflowfm
     """
 
-    bridges_dfm = bridges.copy().astype('object')
-    bridges_dfm['crosssection'] = [{} for _ in range(len(bridges_dfm))]
-    bridges_dfm['shift'] = [0.0 for _ in range(len(bridges_dfm))]
-    
-    for bridge in bridges.itertuples():        
+    bridges_df = bridges.copy().astype('object')
+    bridges_df['crosssection'] = 'Empty'
+    bridges_df['shift'] = 0.0
+     
+    for bridge in bridges_df.itertuples():        
         # first search in yz-profiles
-        prof = yz_profiles[yz_profiles['codegerelateerdobject']==bridge.code]
-        if len(prof) > 0:
-            #bedlevel = np.min([c[2] for c in prof.geometry[0].coords[:]])  
+        if yz_profiles:
+            prof = yz_profiles[yz_profiles['codegerelateerdobject']==bridge.code]
             profile_id=prof.code.values[0]
+            bridges_df.at[bridge.Index, 'crosssection'] = profile_id
         else:
+            prof = []
+        if len(prof) == 0: 
             # if not found, check the parametrised profiles
-            prof = parametrised_profiles[parametrised_profiles['codegerelateerdobject']==bridge.code]
-            #bedlevel = (prof['bodemhoogtebovenstrooms'] + prof['bodemhoogtebenedenstrooms'])/2.
-           
-        if len(prof)==0:
-            # return an error it is still not found
-            raise ValueError(f'{bridge.code} is not found in any cross-section.')
-        
-        profile_id=prof.code.values[0]
-        bridges_dfm.at[bridge.Index, 'crosssection'] = profile_id
-        #bridges_dfm.at[bridge.Index, 'bedlevel'] = float(bedlevel)
+            if parametrised_profiles:
+                prof = parametrised_profiles[parametrised_profiles['codegerelateerdobject']==bridge.code]
+                profile_id=prof.code.values[0]
+                bridges_df.at[bridge.Index, 'crosssection'] = profile_id
+            else:
+                prof = []
+            if len(prof) == 0:
+                # return a warning it is still not found and set bridge id as crossection id.
+                logger.warning('Bridge ' + str(bridge.code) + ' not found in yz profiles and parameterised profiles. Defining crosssection same as bridge id. You have to define a crosssection yourself!')
+                bridges_df.at[bridge.Index, 'crosssection'] = bridge.code
              
-    return bridges_dfm
+    return bridges_df
           
 def generate_culverts(culverts,afsluitmiddel):
 
