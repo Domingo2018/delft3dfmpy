@@ -82,8 +82,12 @@ class ExtendedGeoDataFrame(gpd.GeoDataFrame):
         """
         Import function, extended with type checks. Does not destroy reference to object.
         """
-        # Read GeoDataFrame
-        gdf = gpd.read_file(path)
+        
+        # Read GeoDataFrame from path of from geodataframe
+        if type(path) == str:
+            gdf = gpd.read_file(path)
+        else:
+            gdf = path
 
         # Only keep required columns
         if filter_cols:
